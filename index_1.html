@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ларгус</title>
+<meta name="theme-color" content="#1F5C6E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ларгус">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+
+<style>
+/* Layout: one-screen phone app — header, scrolling view, fixed bottom tab bar; system font for a native iOS feel */
+:root{
+  --bg:#EEF1F0; --surface:#FFFFFF; --sunken:#E4E9E7; --fg:#16201F; --muted:#5E6B69; --line:#D3DAD8;
+  --accent:#1F5C6E; --accent-ink:#FFFFFF; --accent-soft:#D6E6EA;
+  --good:#1E7A46; --good-soft:#DDF0E4; --warn:#9A6200; --warn-soft:#F7EBD2; --bad:#B23A2E; --bad-soft:#F6DEDA;
+  --f:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --r:14px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1514; --surface:#18201F; --sunken:#222C2A; --fg:#E7EDEB; --muted:#93A19E; --line:#2C3836;
+  --accent:#6FB4C6; --accent-ink:#0B1515; --accent-soft:#1D3A42;
+  --good:#5CC88A; --good-soft:#163526; --warn:#E3AE4F; --warn-soft:#3A2C12; --bad:#EE7C6E; --bad-soft:#3E1D19; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1514; --surface:#18201F; --sunken:#222C2A; --fg:#E7EDEB; --muted:#93A19E; --line:#2C3836;
+  --accent:#6FB4C6; --accent-ink:#0B1515; --accent-soft:#1D3A42;
+  --good:#5CC88A; --good-soft:#163526; --warn:#E3AE4F; --warn-soft:#3A2C12; --bad:#EE7C6E; --bad-soft:#3E1D19; color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+:root{padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--fg);font-family:var(--f);font-size:16px;line-height:1.4;font-variant-numeric:tabular-nums}
+.app{max-width:520px;margin:0 auto;min-height:100%;display:flex;flex-direction:column}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding:12px 16px 8px;display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+header h1{margin:0;font-size:28px;font-weight:800;letter-spacing:-.02em}
+header .date{color:var(--muted);font-size:14px}
+main{flex:1;padding:4px 16px calc(150px + env(safe-area-inset-bottom,0px))}
+.view[hidden]{display:none}
+.stack{display:flex;flex-direction:column;gap:12px}
+.card{background:var(--surface);border-radius:var(--r);padding:14px}
+.label{font-size:13px;color:var(--muted);font-weight:500}
+.sec{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:8px 4px 0}
+/* channel segmented */
+.seg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.seg button{font:inherit;font-size:13px;font-weight:600;border:1.5px solid var(--line);background:var(--surface);color:var(--fg);border-radius:10px;padding:7px 2px;cursor:pointer;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.seg small{display:block;font-weight:400;font-size:11px;opacity:.75}
+/* inputs */
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.field{background:var(--surface);border-radius:var(--r);padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.val{display:flex;align-items:baseline;gap:4px}
+.field input{font:inherit;font-size:26px;font-weight:700;border:0;background:transparent;color:var(--fg);width:100%;padding:0;outline:none;font-variant-numeric:tabular-nums}
+.field .u{font-size:13px;color:var(--muted)}
+.field:focus-within{box-shadow:0 0 0 2px var(--accent)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:-4px}
+.chips button{font:inherit;font-size:13px;border:0;background:var(--surface);color:var(--fg);border-radius:999px;padding:5px 10px;cursor:pointer}
+/* result */
+.result{border-radius:var(--r);padding:14px;background:var(--surface)}
+.verdict{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.pill{font-weight:800;font-size:20px;padding:6px 14px;border-radius:999px;background:var(--sunken)}
+.v-good{background:var(--good-soft);color:var(--good)} .v-warn{background:var(--warn-soft);color:var(--warn)} .v-bad{background:var(--bad-soft);color:var(--bad)}
+.why{font-size:13px;color:var(--muted);text-align:right;max-width:55%}
+.kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.kpi{background:var(--sunken);border-radius:10px;padding:8px 10px;min-width:0}
+.kpi small{display:block;font-size:12px;color:var(--muted)}
+.kpi b{font-size:20px}
+.kpi.hl{background:var(--accent-soft)} .kpi.hl b{color:var(--accent)}
+.market{font-size:13px;color:var(--muted);margin-top:10px}
+/* primary action */
+.cta{position:fixed;left:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom,0px));padding:8px 16px;z-index:6;pointer-events:none}
+.cta button{pointer-events:auto;display:block;width:100%;max-width:488px;margin:0 auto;font:inherit;font-size:17px;font-weight:700;border:0;border-radius:14px;padding:15px;background:var(--accent);color:var(--accent-ink);cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.18)}
+.cta[hidden]{display:none}
+/* tab bar */
+nav{position:fixed;left:0;right:0;bottom:0;z-index:7;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav .in{max-width:520px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
+nav button{font:inherit;font-size:11px;font-weight:600;border:0;background:transparent;color:var(--muted);padding:8px 0 10px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
+nav button svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+nav button[aria-current="page"]{color:var(--accent)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* summary strip */
+.strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.strip div{background:var(--surface);border-radius:12px;padding:8px;text-align:center;min-width:0}
+.strip small{display:block;font-size:11px;color:var(--muted)}
+.strip b{font-size:16px}
+/* list */
+.day{font-size:13px;font-weight:600;color:var(--muted);margin:10px 4px 4px;display:flex;justify-content:space-between}
+.list{background:var(--surface);border-radius:var(--r);overflow:hidden}
+.row{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:10px;align-items:center;padding:11px 12px;border-bottom:1px solid var(--line);cursor:pointer}
+.row:last-child{border-bottom:0}
+.dot{width:10px;height:10px;border-radius:50%}
+.d-good{background:var(--good)} .d-warn{background:var(--warn)} .d-bad{background:var(--bad)}
+.row .t{font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .s{font-size:12px;color:var(--muted)}
+.row .m{text-align:right}
+.row .m b{display:block;font-size:15px}
+.row .m span{font-size:12px;color:var(--muted)}
+.empty{padding:28px 16px;text-align:center;color:var(--muted)}
+/* month */
+.monthbar{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.monthbar button{font:inherit;font-size:20px;border:0;background:var(--surface);color:var(--fg);border-radius:10px;width:40px;height:36px;cursor:pointer}
+.monthbar b{font-size:18px}
+.big{font-size:34px;font-weight:800;letter-spacing:-.02em}
+.chart svg{display:block;width:100%;height:auto}
+.chart text{fill:var(--muted);font-size:10px;font-family:var(--f)}
+.bars rect{fill:var(--accent)}
+.grid line{stroke:var(--line)}
+.split{display:flex;flex-direction:column;gap:8px}
+.split .ln{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;font-size:14px}
+.meter{height:6px;border-radius:3px;background:var(--sunken);overflow:hidden;grid-column:1/-1}
+.meter i{display:block;height:100%;background:var(--accent);border-radius:3px}
+/* settings */
+.set{background:var(--surface);border-radius:var(--r);overflow:hidden}
+.set label{display:grid;grid-template-columns:minmax(0,1fr) 110px;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line);font-size:15px}
+.set label:last-child{border-bottom:0}
+.set small{display:block;font-size:12px;color:var(--muted)}
+.set input{font:inherit;font-size:17px;font-weight:600;text-align:right;border:0;background:var(--sunken);color:var(--fg);border-radius:8px;padding:7px 8px;width:100%;outline:none}
+.btn{font:inherit;font-size:15px;font-weight:600;border:0;border-radius:12px;padding:12px;background:var(--surface);color:var(--accent);cursor:pointer;width:100%}
+.btn.danger{color:var(--bad)}
+.note{font-size:12px;color:var(--muted);padding:0 4px}
+.banner{background:var(--warn-soft);color:var(--warn);border-radius:12px;padding:10px 12px;font-size:13px}
+/* sheet */
+.sheet{position:fixed;inset:0;z-index:20;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.35)}
+.sheet[hidden]{display:none}
+.sheet .pane{background:var(--bg);width:100%;max-width:520px;border-radius:18px 18px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px}
+.toast{position:fixed;left:50%;bottom:calc(140px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:999px;font-size:14px;font-weight:600;z-index:30}
+.toast[hidden]{display:none}
+@media (prefers-reduced-motion:no-preference){.toast{transition:opacity .2s}}
+</style>
+</head>
+<body>
+
+
+<div class="app">
+  <header><h1 id="title">Заказ</h1><span class="date" id="today"></span></header>
+  <main>
+    <!-- ЗАКАЗ -->
+    <section class="view stack" id="v-calc">
+      <div class="seg" id="channel">
+        <button type="button" data-ch="direct" aria-pressed="true">Авито<small>4%</small></button>
+        <button type="button" data-ch="company">Компания<small>6%</small></button>
+        <button type="button" data-ch="payout">Прилож.<small>к выплате</small></button>
+        <button type="button" data-ch="gross">Я.Груз.<small>−28%</small></button>
+      </div>
+      <div class="grid2">
+        <label class="field"><span class="label">С грузом</span><span class="val"><input id="kmLoad" type="number" inputmode="decimal" min="0"><span class="u">км</span></span></label>
+        <label class="field"><span class="label">До клиента</span><span class="val"><input id="kmEmpty" type="number" inputmode="decimal" min="0"><span class="u">км</span></span></label>
+        <label class="field"><span class="label">Время</span><span class="val"><input id="minutes" type="number" inputmode="numeric" min="1"><span class="u">мин</span></span></label>
+        <label class="field"><span class="label">Цена</span><span class="val"><input id="price" type="number" inputmode="numeric" min="0"><span class="u">₽</span></span></label>
+      </div>
+      <div class="chips" id="minChips" aria-label="Быстрый выбор времени"><button type="button" data-m="30">30 мин</button><button type="button" data-m="60">1 ч</button><button type="button" data-m="90">1,5 ч</button><button type="button" data-m="120">2 ч</button><button type="button" data-m="180">3 ч</button></div>
+
+      <div class="result" aria-live="polite">
+        <div class="verdict"><span class="pill" id="pill">—</span><span class="why" id="why"></span></div>
+        <div class="kpis">
+          <div class="kpi"><small>Чистыми</small><b id="net">—</b></div>
+          <div class="kpi"><small>В час</small><b id="ph">—</b></div>
+          <div class="kpi"><small>Минимум</small><b id="min">—</b></div>
+          <div class="kpi hl"><small>Просить</small><b id="rec">—</b></div>
+        </div>
+        <div class="market" id="market"></div>
+      </div>
+    </section>
+
+    <!-- ЖУРНАЛ -->
+    <section class="view stack" id="v-log" hidden>
+      <div class="sec">Сегодня</div>
+      <div class="strip">
+        <div><small>Заказов</small><b id="tCnt">0</b></div>
+        <div><small>Выручка</small><b id="tRev">0</b></div>
+        <div><small>Чистыми</small><b id="tNet">0</b></div>
+        <div><small>₽ в час</small><b id="tPh">0</b></div>
+      </div>
+      <div id="logList"></div>
+    </section>
+
+    <!-- ИТОГИ -->
+    <section class="view stack" id="v-stats" hidden>
+      <div class="monthbar"><button type="button" id="mPrev" aria-label="Предыдущий месяц">‹</button><b id="mName"></b><button type="button" id="mNext" aria-label="Следующий месяц">›</button></div>
+      <div class="card">
+        <div class="label">Чистыми за месяц</div>
+        <div class="big" id="sNet">0 ₽</div>
+        <div class="kpis" style="margin-top:10px">
+          <div class="kpi"><small>Выручка</small><b id="sRev">0</b></div>
+          <div class="kpi"><small>Заказов</small><b id="sCnt">0</b></div>
+          <div class="kpi"><small>Часов</small><b id="sHrs">0</b></div>
+          <div class="kpi hl"><small>Чистыми в час</small><b id="sPh">0</b></div>
+        </div>
+      </div>
+      <div class="card chart"><div class="label" style="margin-bottom:6px">Чистыми по дням, ₽</div><div id="chart"></div></div>
+      <div class="card"><div class="label" style="margin-bottom:8px">Откуда заказы</div><div class="split" id="byCh"></div></div>
+    </section>
+
+    <!-- НАСТРОЙКИ -->
+    <section class="view stack" id="v-set" hidden>
+      <div class="sec">Машина</div>
+      <div class="set">
+        <label><span>Бензин АИ-92<small>₽ за литр</small></span><input id="s-fuel" type="number" inputmode="decimal" step="0.1"></label>
+        <label><span>Расход<small>л на 100 км</small></span><input id="s-cons" type="number" inputmode="decimal" step="0.5"></label>
+        <label><span>Износ, ТО, шины<small>₽ на км</small></span><input id="s-wear" type="number" inputmode="decimal" step="0.5"></label>
+        <label><span>Постоянные расходы<small>₽ в день: связь, мойка, ОСАГО</small></span><input id="s-fixed" type="number" inputmode="numeric"></label>
+        <label><span>Рабочих часов<small>в день</small></span><input id="s-hours" type="number" inputmode="decimal"></label>
+      </div>
+      <div class="sec">Цель</div>
+      <div class="set">
+        <label><span>Чистыми в час<small>ниже — «На грани»</small></span><input id="s-target" type="number" inputmode="numeric" step="50"></label>
+        <label><span>Комиссия Я.Грузовой<small>%, данные партнёрского парка</small></span><input id="s-gross" type="number" inputmode="decimal"></label>
+      </div>
+      <div class="sec">Данные</div>
+      <button class="btn" type="button" id="exportBtn">Выгрузить журнал (CSV для Excel)</button>
+      <button class="btn danger" type="button" id="clearDemo">Удалить примеры заказов</button>
+      <p class="note">Журнал хранится только на этом телефоне. Выгружайте его раз в неделю: «Сохранить в Файлы» или отправьте себе на почту.</p>
+    </section>
+  </main>
+
+  <div class="cta" id="cta"><button type="button" id="addBtn">＋ Добавить в журнал</button></div>
+
+  <nav><div class="in">
+    <button type="button" data-tab="calc" aria-current="page"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 11h2M12 11h2M16 11h0M8 15h2M12 15h2M8 18h2M12 18h4"/></svg>Заказ</button>
+    <button type="button" data-tab="log"><svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>Журнал</button>
+    <button type="button" data-tab="stats"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Итоги</button>
+    <button type="button" data-tab="set"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Настройки</button>
+  </div></nav>
+
+  <div class="sheet" id="sheet" hidden><div class="pane">
+    <b id="shTitle"></b><div class="note" id="shText"></div>
+    <button class="btn danger" type="button" id="shDel">Удалить заказ</button>
+    <button class="btn" type="button" id="shClose">Закрыть</button>
+  </div></div>
+  <div class="toast" id="toast" hidden></div>
+</div>
+
+<script>
+(function(){
+  const KEY='largus-app-v1';
+  const DEF={settings:{fuel:65.6,cons:10,wear:4,fixed:300,hours:10,target:500,gross:28},
+             draft:{ch:'direct',kmLoad:25,kmEmpty:7,minutes:90,price:1800},orders:[],demo:false};
+  const CH={direct:{name:'Авито / свои',comm:0,tax:4},company:{name:'Компания',comm:0,tax:6},
+            payout:{name:'Приложение',comm:0,tax:4},gross:{name:'Я.Грузовой',comm:null,tax:4}};
+  const $=id=>document.getElementById(id);
+  let S;
+  try{S=JSON.parse(localStorage.getItem(KEY)||'null');}catch(e){S=null;}
+  if(!S){S=JSON.parse(JSON.stringify(DEF));}
+  S.settings={...DEF.settings,...S.settings};
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+
+  const rub=v=>Math.round(v).toLocaleString('ru-RU')+' ₽';
+  const num=v=>Math.round(v).toLocaleString('ru-RU');
+  const up50=v=>Math.ceil(v/50)*50;
+  const commOf=ch=>ch==='gross'?S.settings.gross:CH[ch].comm;
+  function calc(o){
+    const s=S.settings,km=(+o.kmLoad||0)+(+o.kmEmpty||0),h=Math.max(+o.minutes||0,1)/60;
+    const cost=km*(s.cons/100*s.fuel+s.wear)+(s.hours>0?s.fixed/s.hours*h:0);
+    const k=(1-commOf(o.ch)/100)*(1-CH[o.ch].tax/100);
+    const net=(+o.price||0)*k-cost;
+    return {km,h,cost,k,net,ph:net/h,min:k>0?cost/k:0,rec:k>0?(cost+s.target*h)/k:0};
+  }
+  const verdict=r=>r.ph>=S.settings.target?'good':(r.net>0?'warn':'bad');
+
+  function seedDemo(){
+    const now=new Date(),rows=[
+      [0,'direct',18,6,80,1600],[0,'payout',9,3,45,700],[0,'gross',30,8,120,2400],
+      [1,'direct',40,10,150,2500],[1,'payout',12,4,60,800],[1,'company',25,5,120,2200],
+      [2,'payout',7,5,40,500],[2,'direct',22,7,100,1800],[3,'gross',15,6,70,1300],
+      [4,'direct',55,12,180,3200],[4,'payout',10,3,50,750],[5,'company',35,9,150,2600]];
+    S.orders=rows.map((r,i)=>{const d=new Date(now);d.setDate(d.getDate()-r[0]);d.setHours(10+i%8,(i*17)%60,0,0);
+      return {id:'demo'+i,ts:d.getTime(),ch:r[1],kmLoad:r[2],kmEmpty:r[3],minutes:r[4],price:r[5],demo:true};});
+    S.demo=true;
+  }
+
+  // ---------- tabs ----------
+  const TITLES={calc:'Заказ',log:'Журнал',stats:'Итоги',set:'Настройки'};
+  function tab(t){
+    document.querySelectorAll('nav button').forEach(b=>{if(b.dataset.tab===t)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
+    ['calc','log','stats','set'].forEach(v=>$('v-'+v).hidden=v!==t);
+    $('cta').hidden=t!=='calc'; $('title').textContent=TITLES[t];
+    if(t==='log')renderLog(); if(t==='stats')renderStats(); if(t==='set')renderSet();
+    window.scrollTo(0,0);
+  }
+  document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>tab(b.dataset.tab)));
+  $('today').textContent=new Date().toLocaleDateString('ru-RU',{weekday:'short',day:'numeric',month:'long'});
+
+  // ---------- calculator ----------
+  const fields=['kmLoad','kmEmpty','minutes','price'];
+  fields.forEach(f=>{$(f).value=S.draft[f];$(f).addEventListener('input',()=>{S.draft[f]=$(f).value;save();renderCalc();});});
+  document.querySelectorAll('#channel button').forEach(b=>b.addEventListener('click',()=>{S.draft.ch=b.dataset.ch;save();renderCalc();}));
+  document.querySelectorAll('#minChips button').forEach(b=>b.addEventListener('click',()=>{S.draft.minutes=+b.dataset.m;$('minutes').value=b.dataset.m;save();renderCalc();}));
+  function renderCalc(){
+    document.querySelectorAll('#channel button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.ch===S.draft.ch));
+    const r=calc(S.draft),v=verdict(r),p=$('pill');
+    if(!(+S.draft.price>0)){p.className='pill';p.textContent='Введите цену';$('why').textContent='';}
+    else{p.className='pill v-'+v;p.textContent={good:'Брать',warn:'На грани',bad:'Не брать'}[v];
+      $('why').textContent=v==='good'?'выше цели '+num(S.settings.target)+' ₽/ч':v==='warn'?'попросите '+rub(up50(r.rec)):'работа в минус';}
+    $('net').textContent=rub(r.net); $('ph').textContent=rub(r.ph);
+    $('min').textContent=rub(up50(r.min)); $('rec').textContent=rub(up50(r.rec));
+    $('market').textContent='Рынок 1 000–1 200 ₽/ч: '+num(r.h*1000)+'–'+num(r.h*1200)+' ₽ за такой заказ';
+  }
+  $('addBtn').addEventListener('click',()=>{
+    if(!(+S.draft.price>0)){toast('Введите цену заказа');return;}
+    S.orders.push({id:'o'+Date.now(),ts:Date.now(),ch:S.draft.ch,kmLoad:+S.draft.kmLoad||0,kmEmpty:+S.draft.kmEmpty||0,minutes:+S.draft.minutes||0,price:+S.draft.price||0});
+    save();toast('Заказ добавлен в журнал');
+  });
+
+  // ---------- log ----------
+  const dayKey=ts=>new Date(ts).toDateString();
+  function sum(list){let rev=0,net=0,min=0;list.forEach(o=>{const r=calc(o);rev+=o.price;net+=r.net;min+=o.minutes;});return {cnt:list.length,rev,net,h:min/60,ph:min?net/(min/60):0};}
+  function renderLog(){
+    const today=S.orders.filter(o=>dayKey(o.ts)===dayKey(Date.now())),t=sum(today);
+    $('tCnt').textContent=t.cnt;$('tRev').textContent=num(t.rev);$('tNet').textContent=num(t.net);$('tPh').textContent=num(t.ph);
+    const sorted=[...S.orders].sort((a,b)=>b.ts-a.ts);
+    if(!sorted.length){$('logList').innerHTML='<div class="list"><div class="empty">Пока нет заказов. Посчитайте заказ на вкладке «Заказ» и нажмите «Добавить в журнал».</div></div>';return;}
+    let html='',cur=null,buf=[];
+    const flush=()=>{if(!buf.length)return;const s=sum(buf);const d=new Date(buf[0].ts);
+      html+='<div class="day"><span>'+d.toLocaleDateString('ru-RU',{weekday:'short',day:'numeric',month:'long'})+'</span><span>'+rub(s.net)+'</span></div><div class="list">'+buf.map(rowHtml).join('')+'</div>';buf=[];};
+    sorted.forEach(o=>{if(dayKey(o.ts)!==cur){flush();cur=dayKey(o.ts);}buf.push(o);});flush();
+    $('logList').innerHTML=(S.demo?'<div class="banner">Это примеры заказов, чтобы показать, как выглядит журнал. Удалить их — в Настройках.</div>':'')+html;
+    document.querySelectorAll('.row').forEach(r=>r.addEventListener('click',()=>openSheet(r.dataset.id)));
+  }
+  function rowHtml(o){const r=calc(o),v=verdict(r),tm=new Date(o.ts).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+    return '<div class="row" data-id="'+o.id+'" role="button" tabindex="0"><span class="dot d-'+v+'"></span><div style="min-width:0"><div class="t">'+rub(o.price)+' · '+CH[o.ch].name+'</div><div class="s">'+tm+' · '+(o.kmLoad+o.kmEmpty)+' км · '+o.minutes+' мин</div></div><div class="m"><b>'+rub(r.net)+'</b><span>'+num(r.ph)+' ₽/ч</span></div></div>';}
+  let sheetId=null;
+  function openSheet(id){const o=S.orders.find(x=>x.id===id);if(!o)return;sheetId=id;const r=calc(o);
+    $('shTitle').textContent=rub(o.price)+' · '+CH[o.ch].name;
+    $('shText').textContent=new Date(o.ts).toLocaleString('ru-RU')+'. '+o.kmLoad+' км с грузом, '+o.kmEmpty+' км подача, '+o.minutes+' мин. Чистыми '+rub(r.net)+', '+rub(r.ph)+' в час.';
+    $('sheet').hidden=false;}
+  $('shClose').addEventListener('click',()=>$('sheet').hidden=true);
+  $('sheet').addEventListener('click',e=>{if(e.target.id==='sheet')$('sheet').hidden=true;});
+  $('shDel').addEventListener('click',()=>{S.orders=S.orders.filter(o=>o.id!==sheetId);if(!S.orders.some(o=>o.demo))S.demo=false;save();$('sheet').hidden=true;renderLog();toast('Заказ удалён');});
+
+  // ---------- stats ----------
+  let mOff=0;
+  $('mPrev').addEventListener('click',()=>{mOff--;renderStats();});
+  $('mNext').addEventListener('click',()=>{if(mOff<0){mOff++;renderStats();}});
+  function renderStats(){
+    const base=new Date();base.setDate(1);base.setMonth(base.getMonth()+mOff);
+    const y=base.getFullYear(),m=base.getMonth();
+    const name=base.toLocaleDateString('ru-RU',{month:'long',year:'numeric'});
+    $('mName').textContent=name.charAt(0).toUpperCase()+name.slice(1);
+    const list=S.orders.filter(o=>{const d=new Date(o.ts);return d.getFullYear()===y&&d.getMonth()===m;}),s=sum(list);
+    $('sNet').textContent=rub(s.net);$('sRev').textContent=num(s.rev);$('sCnt').textContent=s.cnt;
+    $('sHrs').textContent=(Math.round(s.h*10)/10).toLocaleString('ru-RU');$('sPh').textContent=num(s.ph);
+    // chart
+    const days=new Date(y,m+1,0).getDate(),vals=Array(days).fill(0);
+    list.forEach(o=>{vals[new Date(o.ts).getDate()-1]+=calc(o).net;});
+    const W=320,H=130,pl=34,pb=18,pt=6,mx=Math.max(1000,...vals),step=Math.pow(10,Math.floor(Math.log10(mx)));
+    const top=Math.ceil(mx/step)*step,bw=(W-pl)/days;
+    let svg='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Чистыми по дням"><g class="grid">';
+    [0,.5,1].forEach(f=>{const yy=pt+(H-pb-pt)*(1-f);svg+='<line x1="'+pl+'" x2="'+W+'" y1="'+yy+'" y2="'+yy+'"/>';});
+    svg+='</g>';[0,.5,1].forEach(f=>{const yy=pt+(H-pb-pt)*(1-f);svg+='<text x="'+(pl-4)+'" y="'+(yy+3)+'" text-anchor="end">'+num(top*f)+'</text>';});
+    svg+='<g class="bars">';vals.forEach((v,i)=>{if(v<=0)return;const h=(H-pb-pt)*v/top;svg+='<rect x="'+(pl+i*bw+1)+'" y="'+(H-pb-h)+'" width="'+Math.max(bw-2,1)+'" height="'+h+'" rx="1.5"/>';});
+    svg+='</g>';[1,10,20,days].forEach(d=>{svg+='<text x="'+(pl+(d-.5)*bw)+'" y="'+(H-4)+'" text-anchor="middle">'+d+'</text>';});
+    $('chart').innerHTML=svg+'</svg>';
+    // by channel
+    const by={};list.forEach(o=>{by[o.ch]=by[o.ch]||[];by[o.ch].push(o);});
+    const keys=Object.keys(by).sort((a,b)=>sum(by[b]).net-sum(by[a]).net),tot=Math.max(s.net,1);
+    $('byCh').innerHTML=keys.length?keys.map(k=>{const x=sum(by[k]);return '<div class="ln"><span>'+CH[k].name+' · '+x.cnt+' зак. · '+num(x.ph)+' ₽/ч</span><b>'+rub(x.net)+'</b><div class="meter"><i style="width:'+Math.max(2,Math.round(x.net/tot*100))+'%"></i></div></div>';}).join(''):'<div class="note">В этом месяце заказов нет.</div>';
+  }
+
+  // ---------- settings ----------
+  const SET={fuel:'s-fuel',cons:'s-cons',wear:'s-wear',fixed:'s-fixed',hours:'s-hours',target:'s-target',gross:'s-gross'};
+  function renderSet(){Object.entries(SET).forEach(([k,id])=>$(id).value=S.settings[k]);$('clearDemo').hidden=!S.demo;}
+  Object.entries(SET).forEach(([k,id])=>$(id).addEventListener('input',()=>{const v=parseFloat($(id).value);if(isFinite(v)){S.settings[k]=v;save();renderCalc();}}));
+  $('clearDemo').addEventListener('click',()=>{S.orders=S.orders.filter(o=>!o.demo);S.demo=false;save();renderSet();toast('Примеры удалены');});
+  $('exportBtn').addEventListener('click',()=>{
+    const head='Дата;Время;Тип заказа;Км с грузом;Км до клиента;Минут;Цена;Чистыми;Чистыми в час';
+    const rows=[...S.orders].sort((a,b)=>a.ts-b.ts).map(o=>{const r=calc(o),d=new Date(o.ts);
+      return [d.toLocaleDateString('ru-RU'),d.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}),CH[o.ch].name,o.kmLoad,o.kmEmpty,o.minutes,o.price,Math.round(r.net),Math.round(r.ph)].join(';');});
+    const text='\ufeff'+[head,...rows].join('\n'),name='largus-zhurnal-'+new Date().toISOString().slice(0,10)+'.csv';
+    const file=new File([text],name,{type:'text/csv'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file],title:'Журнал Ларгус'}).catch(()=>{});return;}
+    const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=name;document.body.appendChild(a);a.click();a.remove();
+    toast('Файл журнала сохранён');
+  });
+
+  let tt;function toast(t){const el=$('toast');el.textContent=t;el.hidden=false;clearTimeout(tt);tt=setTimeout(()=>el.hidden=true,1800);}
+  save();renderCalc();
+  const h=(location.hash||'').slice(1); if(TITLES[h])tab(h);
+})();
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}
+</script>
+
+</body>
+</html>
